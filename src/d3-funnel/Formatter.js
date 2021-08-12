@@ -10,32 +10,34 @@ class Formatter {
         if (typeof format === 'function') {
             return format;
         }
-
-        return (label, value, formattedValue) => (
-            this.stringFormatter(label, value, formattedValue, format)
+  
+        return (label, value, conversion, formattedValue) => (
+            this.stringFormatter(label, value, conversion, formattedValue, format)
         );
     }
-
+  
     /**
      * Format the given value according to the data point or the format.
      *
      * @param {string}   label
      * @param {number}   value
+     * @param {number}   conversion
      * @param {*}        formattedValue
      * @param {function} formatter
      *
      * @return string
      */
-    format({ label, value, formattedValue = null }, formatter) {
-        return formatter(label, value, formattedValue);
+    format({ label, value, conversion, formattedValue = null }, formatter) {
+        return formatter(label, value, conversion, formattedValue);
     }
-
+  
     /**
      * Format the string according to a simple expression.
      *
      * {l}: label
      * {v}: raw value
      * {f}: formatted value
+     * {c}: conversion
      *
      * @param {string} label
      * @param {number} value
@@ -44,24 +46,30 @@ class Formatter {
      *
      * @return {string}
      */
-    stringFormatter(label, value, formattedValue, expression) {
+    stringFormatter(label, value, conversion, formattedValue, expression) {
         let formatted = formattedValue;
-
+        var c = null;
+  
         // Attempt to use supplied formatted value
         // Otherwise, use the default
         if (formattedValue === null) {
             formatted = this.getDefaultFormattedValue(value);
         }
-
+        if (!isNaN(conversion)) {
+            c = this.getDefaultFormattedValue(conversion) + '%';
+        }
+  
         return expression
             .split('{l}')
             .join(label)
             .split('{v}')
             .join(value)
             .split('{f}')
-            .join(formatted);
+            .join(formatted)
+            .split('{c}')
+            .join(c);
     }
-
+  
     /**
      * @param {number} value
      *
@@ -70,6 +78,6 @@ class Formatter {
     getDefaultFormattedValue(value) {
         return value.toLocaleString();
     }
-}
+  }
 
 export default Formatter;

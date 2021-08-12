@@ -29,7 +29,7 @@ class D3Funnel {
             totalCount: null,
         },
         block: {
-            dynamicHeight: false,
+            dynamicSize: false,
             dynamicSlope: false,
             barOverlay: false,
             fill: {
@@ -44,7 +44,30 @@ class D3Funnel {
             fontFamily: null,
             fontSize: '14px',
             fill: '#fff',
-            format: '{l}: {f}',
+            format: '{l}',
+            horizontal: 'middle',
+            vertical: 'baseline',
+            position: 'in',
+        },
+        value: {
+            enabled: true,
+            fontFamily: null,
+            fontSize: '14px',
+            fill: '#fff',
+            format: '{f}',
+            horizontal: 'middle',
+            vertical: 'hanging',
+            position: 'in',
+        },
+        conversion: {
+            enabled: true,
+            fontFamily: null,
+            fontSize: '14px',
+            fill: '#fff',
+            format: '{c}',
+            horizontal: 'middle',
+            vertical: 'middle',
+            position: 'out',
         },
         tooltip: {
             enabled: false,
@@ -131,11 +154,15 @@ class D3Funnel {
 
         // Set labels
         this.labelFormatter = this.formatter.getFormatter(settings.label.format);
+        this.valueFormatter = this.formatter.getFormatter(settings.value.format);
+        this.conversionFormatter = this.formatter.getFormatter(settings.conversion.format);
         this.tooltipFormatter = this.formatter.getFormatter(settings.tooltip.format);
 
         // Set color scales
         this.colorizer.setInstanceId(this.id);
         this.colorizer.setLabelFill(settings.label.fill);
+        this.colorizer.setValueFill(settings.value.fill);
+        this.colorizer.setConversionFill(settings.conversion.fill);
         this.colorizer.setScale(settings.block.fill.scale);
 
         // Initialize funnel chart settings
@@ -153,10 +180,12 @@ class D3Funnel {
             totalCount: settings.chart.totalCount,
             fillType: settings.block.fill.type,
             hoverEffects: settings.block.highlight,
-            dynamicHeight: settings.block.dynamicHeight,
+            dynamicSize: settings.block.dynamicSize,
             dynamicSlope: settings.block.dynamicSlope,
             minHeight: settings.block.minHeight,
             label: settings.label,
+            value: settings.value,
+            conversion: settings.conversion,
             tooltip: settings.tooltip,
             onBlockClick: settings.events.click.block,
         };
@@ -343,6 +372,15 @@ class D3Funnel {
                     formatted: this.formatter.format(block, this.labelFormatter),
                     color: this.colorizer.getLabelColor(block.labelColor),
                 },
+                value: {
+                    raw: block.value,
+                    formatted: this.formatter.format(block, this.valueFormatter),
+                },
+                conversion: {
+                    enabled: !block.hideConversion,
+                    raw: block.conversion,
+                    formatted: this.formatter.format(block, this.conversionFormatter),
+                },
                 tooltip: {
                     enabled: block.enabled,
                     formatted: this.formatter.format(block, this.tooltipFormatter),
@@ -469,7 +507,7 @@ class D3Funnel {
         // Remember to loop back to the beginning point for a closed path
         this.blocks.forEach((block, i) => {
             // Make heights proportional to block weight
-            if (this.settings.dynamicHeight) {
+            if (this.settings.dynamicSize) {
                 // Slice off the height proportional to this block
                 dy = totalHeight * block.ratio;
 
@@ -546,9 +584,9 @@ class D3Funnel {
                 } else {
                     // Revert velocity back to the initial if we are using
                     // static heights (prevents zero velocity if isInverted
-                    // and bottomPinch are non trivial and dynamicHeight is
+                    // and bottomPinch are non trivial and dynamicSize is
                     // false)
-                    if (!this.settings.dynamicHeight) {
+                    if (!this.settings.dynamicSize) {
                         ({ dx } = this);
                     }
 
@@ -847,7 +885,15 @@ class D3Funnel {
         }
 
         if (this.settings.label.enabled && block.label.enabled) {
-            this.addBlockLabel(group, index);
+            this.addBlockText(this.settings.label, group, index, this.blocks[index].label.formatted);
+        }
+
+        if (this.settings.value.enabled) {
+            this.addBlockText(this.settings.value, group, index, this.blocks[index].value.formatted);
+        }
+
+        if (this.settings.conversion.enabled && block.conversion.enabled) {
+            this.addBlockText(this.settings.conversion, group, index, this.blocks[index].conversion.formatted);
         }
     }
 
@@ -1026,6 +1072,43 @@ class D3Funnel {
         });
     }
 
+
+    /**
+     * @param {Object} label
+     * @param {Object} group
+     * @param {int}    index
+     * @param {string} formattedValue
+     * @return {void}
+     */
+    addBlockText(label, group, index, formattedValue) {
+        const paths = this.blockPaths[index];
+
+        // Adjust the text
+        const x = this.getTextX(paths, label.horizontal,
+            label.vertical, label.position);
+        const y = this.getTextY(paths, label.vertical, label.fontSize);
+
+        // Adjust anchor
+        var anchor = label.horizontal;
+        if (label.position === "in" && anchor !== "middle") {
+            anchor = (anchor === "start" ? "end" : "start"); //change positions
+        }
+        const text = group.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('font-size', label.fontSize)
+            .attr('text-anchor', anchor)
+            .attr('dominant-baseline', "middle")
+            .attr('pointer-events', 'none');
+
+        // Add font-family, if exists
+        if (label.fontFamily !== null) {
+            text.attr('font-family', label.fontFamily);
+        }
+
+        text.append('tspan').attr('x', x).attr('dy', 0).text(formattedValue);
+    }
+
     /**
      * @param {Object} group
      * @param {int}    index
@@ -1038,24 +1121,29 @@ class D3Funnel {
         const formattedLabel = this.blocks[index].label.formatted;
         const fill = this.blocks[index].label.color;
 
-        // Center the text
-        const x = this.settings.width / 2;
-        const y = this.getTextY(paths);
+        // Adjust the text
+        const x = this.getTextX(paths, this.settings.label.horizontal,
+            this.settings.label.vertical, this.settings.label.position);
+        const y = this.getTextY(paths, this.settings.label.vertical, this.settings.label.fontSize);
+
+        // Adjust anchor
+        var anchor = this.settings.label.horizontal;
+        if (this.settings.label.position === "in" && anchor !== "middle") {
+            anchor = (anchor === "start") ? "end" : "start"; //change positions
+        }
 
         const text = group.append('text')
             .attr('x', x)
             .attr('y', y)
             .attr('fill', fill)
             .attr('font-size', this.settings.label.fontSize)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
+            .attr('text-anchor', anchor)
             .attr('pointer-events', 'none');
 
         // Add font-family, if exists
         if (this.settings.label.fontFamily !== null) {
             text.attr('font-family', this.settings.label.fontFamily);
         }
-
         this.addLabelLines(text, formattedLabel, x);
     }
 
@@ -1092,14 +1180,77 @@ class D3Funnel {
      *
      * @return {Number}
      */
-    getTextY(paths) {
+    getTextY(paths, vertical, fontSize) {
         const { isCurved, curveHeight } = this.settings;
+        if (vertical === "top") {
+            if (isCurved) {
+                return paths[1][1] + fontSize / 3 + ((1.5 * curveHeight) / this.blocks.length);
+                //return (paths[2][1]) + ((3 * curveHeight) / this.blocks.length);  
+            }
+            return paths[1][1] + fontSize;
+        }
+        else if (vertical === "middle") {
+            if (isCurved) {
+                return ((paths[2][1] + paths[3][1]) / 2) + ((1.5 * curveHeight) / this.blocks.length);
+            }
+            return (paths[1][1] + paths[2][1]) / 2;
+        }
+        else if (vertical === "bottom") {
+            if (isCurved) {
+                return paths[3][1] - fontSize / 3 - ((1.5 * curveHeight) / this.blocks.length);
+            }
+            return paths[2][1] - fontSize / 2;
+        }
+    }
 
-        if (isCurved) {
-            return ((paths[2][1] + paths[3][1]) / 2) + ((1.5 * curveHeight) / this.blocks.length);
+    /**
+     * Returns the x position of the given label's text. This is determined by
+     * taking the mean of the bases.
+     *
+     * @param {Array} paths
+     *
+     * @return {Number}
+     */
+    getTextX(paths, horizontal, vertical, position) {
+        var x1 = 0; //top x
+        var x2 = 0; //bottom x
+
+        if (horizontal === "middle") {//center
+            return this.settings.width / 2;
+        }
+        else if (horizontal === "start") {//right
+            if (this.settings.isCurved) {
+                x1 = paths[2][0];
+                x2 = paths[3][0];
+            }
+            else {
+                x1 = paths[1][0];
+                x2 = paths[2][0];
+            }
+        }
+        else if (horizontal === "end") {//left
+            x1 = paths[0][0];
+            if (this.settings.isCurved)
+                x2 = paths[1][0];
+            else
+                x2 = paths[3][0];
         }
 
-        return (paths[1][1] + paths[2][1]) / 2;
+        var path = 0;
+        if (vertical === "top") {
+            path = x1;
+        }
+        else if (vertical === "middle") {
+            path = (x1 + x2) / 2;
+        }
+        else if (vertical === "end") {
+            path = x2;
+        }
+
+        if (position === "out") {
+            return path + 20;
+        }
+        return path - 20; //in
     }
 }
 
