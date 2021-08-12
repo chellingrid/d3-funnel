@@ -10,12 +10,11 @@ class Formatter {
         if (typeof format === 'function') {
             return format;
         }
-  
         return (label, value, conversion, formattedValue) => (
             this.stringFormatter(label, value, conversion, formattedValue, format)
         );
     }
-  
+
     /**
      * Format the given value according to the data point or the format.
      *
@@ -27,10 +26,12 @@ class Formatter {
      *
      * @return string
      */
-    format({ label, value, conversion, formattedValue = null }, formatter) {
+    format({
+        label, value, conversion, formattedValue = null,
+    }, formatter) {
         return formatter(label, value, conversion, formattedValue);
     }
-  
+
     /**
      * Format the string according to a simple expression.
      *
@@ -48,17 +49,17 @@ class Formatter {
      */
     stringFormatter(label, value, conversion, formattedValue, expression) {
         let formatted = formattedValue;
-        var c = null;
-  
+        let c = null;
+
         // Attempt to use supplied formatted value
         // Otherwise, use the default
         if (formattedValue === null) {
             formatted = this.getDefaultFormattedValue(value);
         }
-        if (!isNaN(conversion)) {
-            c = this.getDefaultFormattedValue(conversion) + '%';
+        if (!Number.isNaN(conversion)) {
+            c = `${this.getDefaultFormattedValue(conversion).toString()} %`;
         }
-  
+
         return expression
             .split('{l}')
             .join(label)
@@ -69,7 +70,7 @@ class Formatter {
             .split('{c}')
             .join(c);
     }
-  
+
     /**
      * @param {number} value
      *
@@ -78,6 +79,6 @@ class Formatter {
     getDefaultFormattedValue(value) {
         return value.toLocaleString();
     }
-  }
+}
 
 export default Formatter;

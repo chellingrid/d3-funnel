@@ -359,7 +359,6 @@ class D3Funnel {
             return {
                 index,
                 ratio,
-                value: block.value,
                 height: this.settings.height * ratio,
                 fill: this.colorizer.getBlockFill(
                     block.backgroundColor,
@@ -564,10 +563,10 @@ class D3Funnel {
             // Make slope width proportional to change in block value
             if (this.settings.dynamicSlope && !this.settings.isInverted) {
                 const nextBlockValue = this.blocks[i + 1] ?
-                    this.blocks[i + 1].value :
-                    block.value;
+                    this.blocks[i + 1].value.raw :
+                    block.value.raw;
 
-                const widthRatio = nextBlockValue / block.value;
+                const widthRatio = nextBlockValue / block.value.raw;
                 dx = (1 - widthRatio) * (centerX - prevLeftX);
             }
 
@@ -885,15 +884,15 @@ class D3Funnel {
         }
 
         if (this.settings.label.enabled && block.label.enabled) {
-            this.addBlockText(this.settings.label, group, index, this.blocks[index].label.formatted);
+            this.addBlockText(this.settings.label, group, index, block.label.formatted);
         }
 
         if (this.settings.value.enabled) {
-            this.addBlockText(this.settings.value, group, index, this.blocks[index].value.formatted);
+            this.addBlockText(this.settings.value, group, index, block.value.formatted);
         }
 
         if (this.settings.conversion.enabled && block.conversion.enabled) {
-            this.addBlockText(this.settings.conversion, group, index, this.blocks[index].conversion.formatted);
+            this.addBlockText(this.settings.conversion, group, index, block.conversion.formatted);
         }
     }
 
@@ -1072,7 +1071,6 @@ class D3Funnel {
         });
     }
 
-
     /**
      * @param {Object} label
      * @param {Object} group
@@ -1089,16 +1087,17 @@ class D3Funnel {
         const y = this.getTextY(paths, label.vertical, label.fontSize);
 
         // Adjust anchor
-        var anchor = label.horizontal;
-        if (label.position === "in" && anchor !== "middle") {
-            anchor = (anchor === "start" ? "end" : "start"); //change positions
+        let anchor = label.horizontal;
+        if (label.position === 'in' && anchor !== 'middle') {
+            // Change positions
+            anchor = (anchor === 'start' ? 'end' : 'start');
         }
         const text = group.append('text')
             .attr('x', x)
             .attr('y', y)
             .attr('font-size', label.fontSize)
             .attr('text-anchor', anchor)
-            .attr('dominant-baseline', "middle")
+            .attr('dominant-baseline', 'middle')
             .attr('pointer-events', 'none');
 
         // Add font-family, if exists
@@ -1127,9 +1126,10 @@ class D3Funnel {
         const y = this.getTextY(paths, this.settings.label.vertical, this.settings.label.fontSize);
 
         // Adjust anchor
-        var anchor = this.settings.label.horizontal;
-        if (this.settings.label.position === "in" && anchor !== "middle") {
-            anchor = (anchor === "start") ? "end" : "start"; //change positions
+        let anchor = this.settings.label.horizontal;
+        if (this.settings.label.position === 'in' && anchor !== 'middle') {
+            // Change positions
+            anchor = (anchor === 'start') ? 'end' : 'start';
         }
 
         const text = group.append('text')
@@ -1182,25 +1182,22 @@ class D3Funnel {
      */
     getTextY(paths, vertical, fontSize) {
         const { isCurved, curveHeight } = this.settings;
-        if (vertical === "top") {
+        if (vertical === 'top') {
             if (isCurved) {
                 return paths[1][1] + fontSize / 3 + ((1.5 * curveHeight) / this.blocks.length);
-                //return (paths[2][1]) + ((3 * curveHeight) / this.blocks.length);  
             }
             return paths[1][1] + fontSize;
         }
-        else if (vertical === "middle") {
+        if (vertical === 'middle') {
             if (isCurved) {
-                return ((paths[2][1] + paths[3][1]) / 2) + ((1.5 * curveHeight) / this.blocks.length);
+                return (paths[2][1] + paths[3][1]) / 2 + ((1.5 * curveHeight) / this.blocks.length);
             }
             return (paths[1][1] + paths[2][1]) / 2;
         }
-        else if (vertical === "bottom") {
-            if (isCurved) {
-                return paths[3][1] - fontSize / 3 - ((1.5 * curveHeight) / this.blocks.length);
-            }
-            return paths[2][1] - fontSize / 2;
+        if (isCurved) {
+            return paths[3][1] - fontSize / 3 - ((1.5 * curveHeight) / this.blocks.length);
         }
+        return paths[2][1] - fontSize / 2;
     }
 
     /**
@@ -1212,45 +1209,47 @@ class D3Funnel {
      * @return {Number}
      */
     getTextX(paths, horizontal, vertical, position) {
-        var x1 = 0; //top x
-        var x2 = 0; //bottom x
+        let x1 = 0; // top x
+        let x2 = 0; // bottom x
+        const path10 = paths[1][0];
+        const path20 = paths[2][0];
+        const path30 = paths[3][0];
 
-        if (horizontal === "middle") {//center
+        if (horizontal === 'middle') {
+            // Center
             return this.settings.width / 2;
         }
-        else if (horizontal === "start") {//right
+        if (horizontal === 'start') {
+            // Right
             if (this.settings.isCurved) {
-                x1 = paths[2][0];
-                x2 = paths[3][0];
+                [x1, x2] = [path20, path30];
+            } else {
+                [x1, x2] = [path10, path20];
             }
-            else {
-                x1 = paths[1][0];
-                x2 = paths[2][0];
+        } else if (horizontal === 'end') {
+            // Left
+            const path00 = paths[0][0];
+            x1 = path00;
+            if (this.settings.isCurved) {
+                x2 = path10;
+            } else {
+                x2 = path30;
             }
-        }
-        else if (horizontal === "end") {//left
-            x1 = paths[0][0];
-            if (this.settings.isCurved)
-                x2 = paths[1][0];
-            else
-                x2 = paths[3][0];
         }
 
-        var path = 0;
-        if (vertical === "top") {
+        let path = 0;
+        if (vertical === 'top') {
             path = x1;
-        }
-        else if (vertical === "middle") {
+        } else if (vertical === 'middle') {
             path = (x1 + x2) / 2;
-        }
-        else if (vertical === "end") {
+        } else if (vertical === 'end') {
             path = x2;
         }
 
-        if (position === "out") {
+        if (position === 'out') {
             return path + 20;
         }
-        return path - 20; //in
+        return path - 20; // in
     }
 }
 
