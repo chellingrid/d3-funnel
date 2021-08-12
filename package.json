@@ -23,7 +23,8 @@
     "gh-deploy": "gulp build-gh-pages && bash ./gh-deploy.sh",
     "prepublishOnly": "gulp build-script-min",
     "mocha": "node test/test.js",
-    "test": "gulp test-script"
+    "test": "gulp test-script",
+    "lint": "eslint"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
