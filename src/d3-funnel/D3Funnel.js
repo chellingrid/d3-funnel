@@ -374,13 +374,11 @@ class D3Funnel {
                 value: {
                     raw: block.value,
                     formatted: this.formatter.format(block, this.valueFormatter),
-                    color: this.colorizer.getValueColor(block.valueColor),
                 },
                 conversion: {
                     enabled: !block.hideConversion,
                     raw: block.conversion,
                     formatted: this.formatter.format(block, this.conversionFormatter),
-                    color: this.colorizer.getConversionColor(block.conversionColor),
                 },
                 tooltip: {
                     enabled: block.enabled,
@@ -1082,6 +1080,7 @@ class D3Funnel {
      */
     addBlockText(label, group, index, formattedValue) {
         const paths = this.blockPaths[index];
+        const fill = label.fill;
 
         // Adjust the text
         const x = this.getTextX(paths, label.horizontal,
@@ -1097,6 +1096,7 @@ class D3Funnel {
         const text = group.append('text')
             .attr('x', x)
             .attr('y', y)
+            .attr('fill', fill)
             .attr('font-size', label.fontSize)
             .attr('text-anchor', anchor)
             .attr('dominant-baseline', 'middle')
