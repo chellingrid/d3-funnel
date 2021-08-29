@@ -369,7 +369,7 @@ class D3Funnel {
                     enabled: !block.hideLabel,
                     raw: block.label,
                     formatted: this.formatter.format(block, this.labelFormatter),
-                    color: this.colorizer.getLabelColor(block.labelColor),
+                    // color: this.colorizer.getLabelColor(block.labelColor),
                 },
                 value: {
                     raw: block.value,
@@ -1080,7 +1080,6 @@ class D3Funnel {
      */
     addBlockText(label, group, index, formattedValue) {
         const paths = this.blockPaths[index];
-        const fill = label.fill;
 
         // Adjust the text
         const x = this.getTextX(paths, label.horizontal,
@@ -1096,7 +1095,7 @@ class D3Funnel {
         const text = group.append('text')
             .attr('x', x)
             .attr('y', y)
-            .attr('fill', fill)
+            .attr('fill', label.fill)
             .attr('font-size', label.fontSize)
             .attr('text-anchor', anchor)
             .attr('dominant-baseline', 'middle')

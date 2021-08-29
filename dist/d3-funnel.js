@@ -358,19 +358,17 @@ var D3Funnel = /*#__PURE__*/function () {
           label: {
             enabled: !block.hideLabel,
             raw: block.label,
-            formatted: _this.formatter.format(block, _this.labelFormatter),
-            color: _this.colorizer.getLabelColor(block.labelColor)
+            formatted: _this.formatter.format(block, _this.labelFormatter) // color: this.colorizer.getLabelColor(block.labelColor),
+
           },
           value: {
             raw: block.value,
-            formatted: _this.formatter.format(block, _this.valueFormatter),
-            color: _this.colorizer.getValueColor(block.valueColor)
+            formatted: _this.formatter.format(block, _this.valueFormatter)
           },
           conversion: {
             enabled: !block.hideConversion,
             raw: block.conversion,
-            formatted: _this.formatter.format(block, _this.conversionFormatter),
-            color: _this.colorizer.getConversionColor(block.conversionColor)
+            formatted: _this.formatter.format(block, _this.conversionFormatter)
           },
           tooltip: {
             enabled: block.enabled,
@@ -1028,7 +1026,7 @@ var D3Funnel = /*#__PURE__*/function () {
         anchor = anchor === 'start' ? 'end' : 'start';
       }
 
-      var text = group.append('text').attr('x', x).attr('y', y).attr('font-size', label.fontSize).attr('text-anchor', anchor).attr('dominant-baseline', 'middle').attr('pointer-events', 'none'); // Add font-family, if exists
+      var text = group.append('text').attr('x', x).attr('y', y).attr('fill', label.fill).attr('font-size', label.fontSize).attr('text-anchor', anchor).attr('dominant-baseline', 'middle').attr('pointer-events', 'none'); // Add font-family, if exists
 
       if (label.fontFamily !== null) {
         text.attr('font-family', label.fontFamily);
