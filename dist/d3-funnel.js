@@ -363,12 +363,14 @@ var D3Funnel = /*#__PURE__*/function () {
           },
           value: {
             raw: block.value,
-            formatted: _this.formatter.format(block, _this.valueFormatter)
+            formatted: _this.formatter.format(block, _this.valueFormatter),
+            color: _this.colorizer.getValueColor(block.valueColor)
           },
           conversion: {
             enabled: !block.hideConversion,
             raw: block.conversion,
-            formatted: _this.formatter.format(block, _this.conversionFormatter)
+            formatted: _this.formatter.format(block, _this.conversionFormatter),
+            color: _this.colorizer.getConversionColor(block.conversionColor)
           },
           tooltip: {
             enabled: block.enabled,

@@ -374,11 +374,13 @@ class D3Funnel {
                 value: {
                     raw: block.value,
                     formatted: this.formatter.format(block, this.valueFormatter),
+                    color: this.colorizer.getValueColor(block.valueColor),
                 },
                 conversion: {
                     enabled: !block.hideConversion,
                     raw: block.conversion,
                     formatted: this.formatter.format(block, this.conversionFormatter),
+                    color: this.colorizer.getConversionColor(block.conversionColor),
                 },
                 tooltip: {
                     enabled: block.enabled,
